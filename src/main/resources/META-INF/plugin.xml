@@ -1,18 +1,25 @@
-<!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
 <idea-plugin>
-    <id>com.github.subtixx.ideagithub</id>
-    <name>IntelliJ Platform Plugin idea-github</name>
-    <vendor>subtixx</vendor>
+    <id>de.ithock.issuetracker</id>
+    <name>Advanced Issue Integration</name>
+    <vendor>IT-Hock</vendor>
 
     <depends>com.intellij.modules.platform</depends>
 
     <extensions defaultExtensionNs="com.intellij">
-        <applicationService serviceImplementation="com.github.subtixx.ideagithub.services.MyApplicationService"/>
-        <projectService serviceImplementation="com.github.subtixx.ideagithub.services.MyProjectService"/>
+        <toolWindow factoryClass="de.ithock.issuetracker.toolwindows.GitHubListToolWindow"
+                    id="de.ithock.issuetracker.toolwindows.githubIssueList" anchor="bottom"
+                    secondary="true" canCloseContents="true" icon="/icons/issue.png"/>
+
+        <applicationConfigurable parentId="tools"
+                                 instance="de.ithock.issuetracker.settings.AdvancedIssueTrackerConfigurable"
+                                 id="de.ithock.issuetracker.settings.AdvancedIssueTrackerConfigurable"
+                                 displayName="Advanced Issue Integration"/>
+        <!--<projectConfigurable parentId="tools" instance="de.ithock.issuetracker.IssueTrackerProjectConfigurable"
+                             id="de.ithock.issuetracker.IssueTrackerProjectConfigurable"
+                             displayName="Advanced Issue Integration"/>-->
     </extensions>
 
+
     <applicationListeners>
-        <listener class="com.github.subtixx.ideagithub.listeners.MyProjectManagerListener"
-                  topic="com.intellij.openapi.project.ProjectManagerListener"/>
     </applicationListeners>
 </idea-plugin>
