@@ -2,7 +2,9 @@ package de.ithock.issuetracker.data
 
 import org.kohsuke.github.GHIssue
 import org.kohsuke.github.GHIssueState
+import java.io.Serializable
 import java.util.*
+
 
 /**
  * A Class that represents an Issue
@@ -17,7 +19,7 @@ import java.util.*
  * @param labels The labels of the issue
  * @param milestone The milestone of the issue
  */
-class Issue(
+open class Issue(
     identifier: String,
     title: String,
     body: String,
@@ -43,6 +45,7 @@ class Issue(
     private val createdAt: Date
 
     private val closedAt: Date?
+
     /**
      * - Labels in GitHub
      * - Tags in JetBrains Space
@@ -129,4 +132,13 @@ class Issue(
     fun getUrl(): String {
         return url
     }
+
+    fun getResolved(): Boolean {
+        return state == IssueState.CLOSED
+    }
+
+    fun getCustomFields(): List<IssueCustomField> {
+        return emptyList()
+    }
 }
+

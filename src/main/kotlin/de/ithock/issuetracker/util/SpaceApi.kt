@@ -5,11 +5,13 @@ import com.intellij.openapi.rd.util.toPromise
 import com.sun.net.httpserver.HttpExchange
 import com.sun.net.httpserver.HttpHandler
 import com.sun.net.httpserver.HttpServer
+import de.ithock.issuetracker.PluginBundle
 import de.ithock.issuetracker.data.Issue
 import de.ithock.issuetracker.data.IssueLabel
 import de.ithock.issuetracker.data.IssueState
 import kotlinx.coroutines.*
 import okhttp3.*
+import org.jetbrains.concurrency.AsyncPromise
 import org.jetbrains.concurrency.Promise
 import org.jetbrains.concurrency.rejectedPromise
 import org.jetbrains.concurrency.resolvedPromise
@@ -25,15 +27,17 @@ class SpaceApi(private val spaceConnection: SpaceConnection) : Callback, HttpHan
     private var httpServer: HttpServer? = null
 
     init {
-        // Check if we have a valid bearer token
-        if (spaceConnection.accessToken != null && spaceConnection.accessTokenExpire != null) {
-            // Check if the token is still valid
-            if (spaceConnection.accessTokenExpire!!.before(Date())) {
-                // Token is expired, so we need to get a new one
-                TODO("Get new token")
+        if (spaceConnection.permanentToken == null) {
+            // Check if we have a valid bearer token
+            if (spaceConnection.accessToken != null && spaceConnection.accessTokenExpire != null) {
+                // Check if the token is still valid
+                if (spaceConnection.accessTokenExpire!!.before(Date())) {
+                    // Token is expired, so we need to get a new one
+                    TODO("Get new token")
+                }
+            } else {
+                authorizeUser()
             }
-        } else {
-            authorizeUser()
         }
     }
 
@@ -41,7 +45,7 @@ class SpaceApi(private val spaceConnection: SpaceConnection) : Callback, HttpHan
      * Authorize the user by opening a web browser inside IntelliJ
      */
     private fun authorizeUser() {
-        val scopes : List<String> = listOf(
+        val scopes: List<String> = listOf(
             "global:Project.Issues.Create",
             "global:Project.Issues.View",
             "global:Project.Issues.Edit",
@@ -61,9 +65,56 @@ class SpaceApi(private val spaceConnection: SpaceConnection) : Callback, HttpHan
         BrowserUtil.browse("${spaceConnection.spaceUrl}/oauth/auth?response_type=code&state=aitidea&redirect_uri=$redirectUri&request_credentials=offline&client_id=${spaceConnection.clientId}&scope=${scope}&access_type=offline")
     }
 
-    fun fetchIssues(spaceApiUrl: String, spaceApiToken: String): List<Issue> {
-        TODO("Not yet implemented")
-        return listOf()
+    fun fetchIssues(projectId:String): List<Issue> {
+        val request = request("projects/$projectId/planning/issues?sorting=CREATED&descending=false&\$fields=data(status(name,color,resolved),id,assignee(username),createdBy(name),creationTime,tags(name),description,title)")
+
+        val response = client.newCall(request).execute()
+        if(response.code() != 200) {
+            when(response.code()) {
+                401 -> {
+                    // Unauthorized
+                    TODO("GET NEW TOKEN")
+                }
+                403 -> {
+                    val body = response.body()
+                    if(body != null) {
+                        val json = JSONObject(body.string())
+                        val errorKey = json.getString("error")
+                        val message = json.getString("error_description")
+                        throw SpaceApiException(errorKey, message)
+                    } else {
+                        throw SpaceApiException(SpaceApiException.SpaceApiExceptions.UNKNOWN_ERROR)
+                    }
+                }
+                else -> {
+                    throw IOException("Unexpected code $response")
+                }
+            }
+        }
+        if(response.body() == null) {
+            throw IOException("No body in response")
+        }
+        val body = response.body()!!.string()
+
+        return parseResponse(body)
+
+    }
+
+    private fun request(url:String):Request {
+        var authHeader = "Bearer"
+        if(spaceConnection.permanentToken != null)
+        {
+            authHeader += " ${spaceConnection.permanentToken}"
+        }
+        else if(spaceConnection.accessToken != null)
+        {
+            authHeader += " ${spaceConnection.accessToken}"
+        }
+        return Request.Builder()
+            .url("${spaceConnection.spaceUrl}/api/http/$url")
+            .header("Authorization", authHeader)
+            .header("Accept", "application/json")
+            .build()
     }
 
     private fun parseResponse(responseBody: String?): List<Issue> {
@@ -71,13 +122,18 @@ class SpaceApi(private val spaceConnection: SpaceConnection) : Callback, HttpHan
 
         if (responseBody != null) {
             val jsonResponse = JSONObject(responseBody)
-            val jsonIssues = jsonResponse.getJSONArray("items")
+            val jsonIssues = jsonResponse.getJSONArray("data")
 
             for (i in 0 until jsonIssues.length()) {
                 val jsonIssue = jsonIssues.getJSONObject(i)
 
                 // Answer looks like this
-                /*{
+                /*
+                {
+  "next": "1",
+  "totalCount": 1,
+  "data": [
+  {
                       "id": "1bGvBu0cSJ4s",
                       "createdBy": {
                         "name": "subtixx"
@@ -96,6 +152,7 @@ class SpaceApi(private val spaceConnection: SpaceConnection) : Callback, HttpHan
                       "title": "This is a test issue",
                       "description": "Hello this is a test issue to have some examples to test something with issues"
                     }
+                    ]
                  */
                 val id = jsonIssue.getString("id")
                 val title = jsonIssue.getString("title")
@@ -104,27 +161,11 @@ class SpaceApi(private val spaceConnection: SpaceConnection) : Callback, HttpHan
                 val statusColor = jsonIssue.getJSONObject("status").getString("color")
                 val statusResolved = jsonIssue.getJSONObject("status").getBoolean("resolved")
                 val author = jsonIssue.getJSONObject("createdBy").getString("name")
-                val assignee = jsonIssue.getJSONObject("assignee").getString("name")
+                val assignee = jsonIssue.optJSONObject("assignee")?.getString("username")
                 val creationTime = jsonIssue.getJSONObject("creationTime").getNumber("timestamp")
-                val dueDate = jsonIssue.getJSONObject("dueDate").getNumber("timestamp")
+                val dueDate = jsonIssue.optJSONObject("dueDate")?.getString("iso")
                 val tags = jsonIssue.getJSONArray("tags").toList()
 
-                /*
-                Issue Requires:
-                        this.identifier = identifier
-
-                        this.title = title
-                        this.body = body
-
-                        this.state = state
-                        this.milestone = milestone
-
-                        this.author = author
-                        this.assignee = assignee
-                        this.createdAt = createdAt
-                        this.closedAt = closedAt
-                        this.labels = labels
-                */
                 val issueState: IssueState = when (status) {
                     "Open" -> IssueState.OPEN
                     "Closed" -> IssueState.CLOSED

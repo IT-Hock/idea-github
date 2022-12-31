@@ -23,4 +23,12 @@ class IssueLabel(
     fun getName(): String {
         return name
     }
+
+    fun getColor(): String {
+        return color
+    }
+
+    fun getIdentifier(): String {
+        return identifier
+    }
 }
