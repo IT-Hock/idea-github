@@ -142,8 +142,7 @@ new FormModel {
 				} )
 			}, new FormLayoutConstraints( class com.intellij.uiDesigner.core.GridConstraints ) {
 				"row": 3
-				"fill": 3
-				"vSizePolicy": 1
+				"anchor": 4
 			} )
 		}, new FormLayoutConstraints( null ) {
 			"location": new java.awt.Point( 0, 0 )

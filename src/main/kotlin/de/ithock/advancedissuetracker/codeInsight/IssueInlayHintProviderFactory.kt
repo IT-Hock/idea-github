@@ -11,7 +11,9 @@ import com.intellij.psi.tree.TokenSet
 
 class IssueInlayHintProviderFactory : InlayHintsProviderFactory {
     override fun getLanguages(): Iterable<Language> {
+        return emptyList()
         val languagesSupported = ArrayList<Language>()
+        languagesSupported.add(Language.ANY)
         val languages = Language.getRegisteredLanguages()
         for (language in languages){
             if(isLanguageSupported(language)) {
@@ -23,7 +25,6 @@ class IssueInlayHintProviderFactory : InlayHintsProviderFactory {
     }
 
     override fun getProvidersInfo(): List<ProviderInfo<out Any>> {
-        return emptyList()
         return listOf(
             ProviderInfo(Language.ANY, IssueInlayHintProvider(Language.ANY))
         )

@@ -170,9 +170,9 @@ public class IssueHoverForm extends JPanel {
                 null, null, null));
         }
         add(panel3, new GridConstraints(3, 0, 1, 1,
-            GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH,
+            GridConstraints.ANCHOR_EAST, GridConstraints.FILL_NONE,
             GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW,
-            GridConstraints.SIZEPOLICY_CAN_SHRINK,
+            GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW,
             null, null, null));
         // JFormDesigner - End of component initialization  //GEN-END:initComponents  @formatter:on
     }

@@ -4,6 +4,7 @@ package de.ithock.advancedissuetracker.codeInsight
 
 import com.intellij.codeInsight.hints.*
 import com.intellij.codeInsight.hints.presentation.*
+import com.intellij.icons.AllIcons
 import com.intellij.ide.BrowserUtil
 import com.intellij.lang.Language
 import com.intellij.lang.LanguageParserDefinitions
@@ -34,6 +35,9 @@ import java.awt.event.FocusEvent
 import java.util.*
 import javax.swing.*
 
+import com.intellij.openapi.components.ProjectComponent
+import com.intellij.ui.components.IconLabelButton
+
 class IssueInlayHintProvider : InlayHintsProvider<IssueInlayHintProvider.Settings> {
     override val key: SettingsKey<Settings>
         get() = SettingsKey("advancedissuetracker.IssueInlayHintProvider")
@@ -48,7 +52,13 @@ class IssueInlayHintProvider : InlayHintsProvider<IssueInlayHintProvider.Setting
         return PluginBundle.get("inlay_hints.$key")
     }
 
-    constructor(language: Language){
+    override val isVisibleInSettings: Boolean
+        get() = Language.findLanguageByID("JAVA") == language
+
+    private var language: Language? = null
+
+    constructor(language: Language) {
+        this.language = language
         Helpers.getLogger().info("IssueInlayHintProvider for language $language")
     }
 
@@ -109,8 +119,7 @@ class IssueInlayHintProvider : InlayHintsProvider<IssueInlayHintProvider.Setting
 
                     var inlayHint = createInlayHint(editor, issue)
                     inlayHint = factory.withCursorOnHover(
-                        inlayHint,
-                        Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
+                        inlayHint, Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
                     )
                     inlayHint = factory.onClick(inlayHint, MouseButton.Left) { _, _ ->
                         BrowserUtil.browse(issue.url)
@@ -118,10 +127,8 @@ class IssueInlayHintProvider : InlayHintsProvider<IssueInlayHintProvider.Setting
                     val customFactory = PresentationFactoryEx(editor)
                     inlayHint = customFactory.withTooltip(
                         IssueHover(
-                            issue,
-                            getIssueHoverActions(issue)
-                        ),
-                        inlayHint
+                            issue, getIssueHoverActions(issue)
+                        ), inlayHint
                     )
 
                     sink.addBlockElement(
@@ -185,32 +192,32 @@ class IssueInlayHintProvider : InlayHintsProvider<IssueInlayHintProvider.Setting
         }
     }
 
-    private fun getIssueHoverActions(issue: Issue): List<Action> {
-        val actions: MutableList<Action> = mutableListOf()
+    private fun getIssueHoverActions(issue: Issue): List<JComponent> {
+        val actions: MutableList<JComponent> = mutableListOf()
 
-        actions.add(object : AbstractAction(PluginBundle.get("inlay_hints.actions.open_in_browser")) {
-            override fun actionPerformed(e: ActionEvent?) {
-                BrowserUtil.browse(issue.url)
-            }
+        actions.add(IconLabelButton(
+            AllIcons.Actions.InlayGlobe,
+        ) {
+            BrowserUtil.browse(issue.url)
         })
 
-        actions.add(object : AbstractAction(PluginBundle.get("inlay_hints.actions.edit_issue")) {
-            override fun actionPerformed(e: ActionEvent?) {
-                TODO("Not yet implemented")
-            }
+        actions.add(IconLabelButton(
+            AllIcons.Actions.Edit,
+        ) {
+            TODO("Not yet implemented")
         })
 
         if (!issue.state.resolved) {
-            actions.add(object : AbstractAction(PluginBundle.get("inlay_hints.actions.close_issue")) {
-                override fun actionPerformed(e: ActionEvent?) {
-                    TODO("Not yet implemented")
-                }
+            actions.add(IconLabelButton(
+                AllIcons.Actions.Close,
+            ) {
+                TODO("Not yet implemented")
             })
         } else {
-            actions.add(object : AbstractAction(PluginBundle.get("inlay_hints.actions.reopen_issue")) {
-                override fun actionPerformed(e: ActionEvent?) {
-                    TODO("Not yet implemented")
-                }
+            actions.add(IconLabelButton(
+                AllIcons.Actions.Checked,
+            ) {
+                TODO("Not yet implemented")
             })
         }
         return actions

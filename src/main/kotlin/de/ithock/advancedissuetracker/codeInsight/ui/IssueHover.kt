@@ -1,26 +1,34 @@
 package de.ithock.advancedissuetracker.codeInsight.ui
 
 import com.intellij.ide.BrowserUtil
+import com.intellij.openapi.actionSystem.impl.ActionButton
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.ui.components.ActionLink
-import com.intellij.ui.components.JBLabel
-import com.intellij.ui.components.JBScrollPane
-import com.intellij.ui.components.JBTextArea
+import com.intellij.ui.components.*
+import com.intellij.ui.dsl.builder.columns
+import com.intellij.ui.dsl.builder.panel
+import com.intellij.ui.dsl.builder.rows
+import com.intellij.ui.dsl.builder.text
 import com.intellij.uiDesigner.core.GridConstraints
 import com.intellij.uiDesigner.core.GridLayoutManager
+import com.intellij.util.applyIf
 import com.intellij.util.ui.JBUI
+import com.intellij.util.ui.JButtonAction
 import de.ithock.advancedissuetracker.IssueTrackerProjectService
 import de.ithock.advancedissuetracker.IssueTrackerService
 import de.ithock.advancedissuetracker.implementations.Issue
+import de.ithock.advancedissuetracker.util.AvatarCache
 import java.awt.Dimension
 import java.util.*
 import javax.swing.*
 import kotlin.collections.ArrayList
 
-
+/**
+ * How it currently looks:
+ * @link https://user-images.githubusercontent.com/20743379/210153378-8d31d26c-54d9-4825-bb68-c408b5ee21dd.png
+ */
 class IssueHover(
     private val issue: Issue,
-    private val actions: List<Action> = emptyList()
+    private val actions: List<JComponent> = emptyList()
 ) : JPanel() {
     private var issueDetailsPanel: JPanel
     private val issueSummaryPanel: JPanel
@@ -32,6 +40,7 @@ class IssueHover(
     private val issueSummary: JLabel = JLabel()
     private val issueAuthorAvatar: JLabel = JLabel()
     private val issueAuthorNameLabel: JLabel = JLabel()
+
 
     init {
         layout = GridLayoutManager(4, 1, JBUI.insets(10), 0, 0)
@@ -53,9 +62,6 @@ class IssueHover(
             )
         )
 
-        //======== panel1 ========
-
-        //======== panel1 ========
         issueAuthorPanel = createIssueAuthorPanel()
         add(
             issueAuthorPanel, GridConstraints(
@@ -97,8 +103,8 @@ class IssueHover(
                 0,
                 1,
                 1,
-                GridConstraints.ANCHOR_CENTER,
-                GridConstraints.FILL_BOTH,
+                GridConstraints.ANCHOR_EAST,
+                GridConstraints.FILL_NONE,
                 GridConstraints.SIZEPOLICY_CAN_SHRINK or GridConstraints.SIZEPOLICY_CAN_GROW,
                 GridConstraints.SIZEPOLICY_CAN_SHRINK,
                 null,
@@ -117,9 +123,9 @@ class IssueHover(
         linksPanel.layout = GridLayoutManager(1, actions.size, JBUI.insets(0, 10), 10, -1)
 
         for (action in actions) {
-            val actionLink = ActionLink(action)
+            // Create icon button
             linksPanel.add(
-                actionLink, GridConstraints(
+                action, GridConstraints(
                     0,
                     linksPanel.componentCount,
                     1,
